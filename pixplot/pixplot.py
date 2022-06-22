@@ -575,8 +575,8 @@ def get_inception_vectors(**kwargs):
   print(timestamp(), 'Creating Inception vectors for {} images'.format(len(kwargs['image_paths'])))
   vector_dir = os.path.join(kwargs['out_dir'], 'image-vectors', 'inception')
   if not os.path.exists(vector_dir): os.makedirs(vector_dir)
-  #base = InceptionV3(include_top=True, weights='imagenet',)
-  #model = Model(inputs=base.input, outputs=base.get_layer('avg_pool').output)
+  base = InceptionV3(include_top=True, weights='imagenet',)
+  model = Model(inputs=base.input, outputs=base.get_layer('avg_pool').output)
   with open(kwargs['mapping'], 'rb') as infile:
     iiif2vec = pickle.load(infile)
   print(timestamp(), 'Creating image array')
@@ -591,7 +591,12 @@ def get_inception_vectors(**kwargs):
       #else:
       #  im = preprocess_input( img_to_array( i.original.resize((299,299)) ) )
       #vec = model.predict(np.expand_dims(im, 0)).squeeze()
-      vec = iiif2vec[filename]
+      try:
+        vec = iiif2vec[filename]
+      except:
+        print('predicting cause couldnt file in mapping')
+        im = preprocess_input( img_to_array( i.original.resize((299,299)) ) )
+        vec = model.predict(np.expand_dims(im, 0)).squeeze()
       np.save(vector_path, vec)
       vecs.append(vec)
       progress_bar.update(1)
