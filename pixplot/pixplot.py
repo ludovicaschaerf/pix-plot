@@ -116,6 +116,7 @@ NB: Keras Image class objects return image.size as w,h
 config = {
   'images': None,
   'metadata': None,
+  'mapping': None,
   'out_dir': 'output',
   'max_images': None,
   'use_cache': True,
@@ -572,7 +573,7 @@ def get_inception_vectors(**kwargs):
   if not os.path.exists(vector_dir): os.makedirs(vector_dir)
   #base = InceptionV3(include_top=True, weights='imagenet',)
   #model = Model(inputs=base.input, outputs=base.get_layer('avg_pool').output)
-  with open('./iiif2vec.pkl', 'rb') as infile:
+  with open(kwargs['mapping'], 'rb') as infile:
     iiif2vec = pickle.load(infile)
   print(timestamp(), 'Creating image array')
   vecs = []
@@ -1369,6 +1370,7 @@ def parse():
   parser = argparse.ArgumentParser(description=description, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument('--images', '-i', type=str, default=config['images'], help='path to a glob of images to process', required=False)
   parser.add_argument('--metadata', '-m', type=str, default=config['metadata'], help='path to a csv or glob of JSON files with image metadata (see readme for format)', required=False)
+  parser.add_argument('--mapping', '-map', type=str, default=config['mapping'], help='path to a pkl file with mapping', required=False)
   parser.add_argument('--max_images', type=int, default=config['max_images'], help='maximum number of images to process from the input glob', required=False)
   parser.add_argument('--use_cache', type=bool, default=config['use_cache'], help='given inputs identical to prior inputs, load outputs from cache', required=False)
   parser.add_argument('--encoding', type=str, default=config['encoding'], help='the encoding of input metadata', required=False)
