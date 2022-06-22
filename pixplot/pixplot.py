@@ -154,6 +154,10 @@ def process_images(**kwargs):
   np.random.seed(kwargs['seed'])
   compat.v1.set_random_seed(kwargs['seed'])
   kwargs['out_dir'] = join(kwargs['out_dir'], 'data')
+  print('checking if mapping file is working')
+  with open(kwargs['mapping'], 'rb') as infile:
+    iiif2vec = pickle.load(infile)
+  print('worked! ', iiif2vec.shape)
   kwargs['image_paths'], kwargs['metadata'] = filter_images(**kwargs)
   kwargs['atlas_dir'] = get_atlas_data(**kwargs)
   kwargs['vecs'] = get_inception_vectors(**kwargs)
