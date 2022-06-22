@@ -565,28 +565,54 @@ def get_layouts(**kwargs):
   }
   return layouts
 
-
 def get_inception_vectors(**kwargs):
   '''Create and return Inception vector representation of Image() instances'''
   print(timestamp(), 'Creating Inception vectors for {} images'.format(len(kwargs['image_paths'])))
   vector_dir = os.path.join(kwargs['out_dir'], 'image-vectors', 'inception')
   if not os.path.exists(vector_dir): os.makedirs(vector_dir)
-  base = InceptionV3(include_top=True, weights='imagenet',)
-  model = Model(inputs=base.input, outputs=base.get_layer('avg_pool').output)
+  #base = InceptionV3(include_top=True, weights='imagenet',)
+  #model = Model(inputs=base.input, outputs=base.get_layer('avg_pool').output)
+  with open('iiif2vec.pkl', 'rb') as infile:
+    iiif2vec = pickle.load(infile)
   print(timestamp(), 'Creating image array')
   vecs = []
   with tqdm(total=len(kwargs['image_paths'])) as progress_bar:
     for idx, i in enumerate(stream_images(**kwargs)):
+      filename = clean_filename(i.path)
+
       vector_path = os.path.join(vector_dir, clean_filename(i.path) + '.npy')
-      if os.path.exists(vector_path) and kwargs['use_cache']:
-        vec = np.load(vector_path)
-      else:
-        im = preprocess_input( img_to_array( i.original.resize((299,299)) ) )
-        vec = model.predict(np.expand_dims(im, 0)).squeeze()
-        np.save(vector_path, vec)
+      #if os.path.exists(vector_path) and kwargs['use_cache']:
+      #  vec = np.load(vector_path)
+      #else:
+      #  im = preprocess_input( img_to_array( i.original.resize((299,299)) ) )
+      #vec = model.predict(np.expand_dims(im, 0)).squeeze()
+      vec = iiif2vec[filename]
+      np.save(vector_path, vec)
       vecs.append(vec)
       progress_bar.update(1)
   return np.array(vecs)
+
+# def get_inception_vectors(**kwargs):
+#   '''Create and return Inception vector representation of Image() instances'''
+#   print(timestamp(), 'Creating Inception vectors for {} images'.format(len(kwargs['image_paths'])))
+#   vector_dir = os.path.join(kwargs['out_dir'], 'image-vectors', 'inception')
+#   if not os.path.exists(vector_dir): os.makedirs(vector_dir)
+#   base = InceptionV3(include_top=True, weights='imagenet',)
+#   model = Model(inputs=base.input, outputs=base.get_layer('avg_pool').output)
+#   print(timestamp(), 'Creating image array')
+#   vecs = []
+#   with tqdm(total=len(kwargs['image_paths'])) as progress_bar:
+#     for idx, i in enumerate(stream_images(**kwargs)):
+#       vector_path = os.path.join(vector_dir, clean_filename(i.path) + '.npy')
+#       if os.path.exists(vector_path) and kwargs['use_cache']:
+#         vec = np.load(vector_path)
+#       else:
+#         im = preprocess_input( img_to_array( i.original.resize((299,299)) ) )
+#         vec = model.predict(np.expand_dims(im, 0)).squeeze()
+#         np.save(vector_path, vec)
+#       vecs.append(vec)
+#       progress_bar.update(1)
+#   return np.array(vecs)
 
 
 def get_umap_layout(**kwargs):
