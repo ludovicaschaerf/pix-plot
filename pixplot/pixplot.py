@@ -572,7 +572,7 @@ def get_inception_vectors(**kwargs):
   if not os.path.exists(vector_dir): os.makedirs(vector_dir)
   #base = InceptionV3(include_top=True, weights='imagenet',)
   #model = Model(inputs=base.input, outputs=base.get_layer('avg_pool').output)
-  with open('iiif2vec.pkl', 'rb') as infile:
+  with open('./iiif2vec.pkl', 'rb') as infile:
     iiif2vec = pickle.load(infile)
   print(timestamp(), 'Creating image array')
   vecs = []
