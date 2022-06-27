@@ -6,6 +6,7 @@ import warnings; warnings.filterwarnings('ignore')
 ##
 
 from os.path import basename, join, exists, dirname, realpath
+from sklearn.cluster import DBSCAN
 from distutils.dir_util import copy_tree
 import pkg_resources
 import datetime
@@ -82,13 +83,17 @@ if '--copy_web_only' not in sys.argv:
     from sklearn.manifold import TSNE
 
   try:
-    from hdbscan import HDBSCAN
-    cluster_method = 'hdbscan'
+    #from hdbscan import HDBSCAN
+    #cluster_method = 'hdbscan'
+    from sklearn.cluster import OPTICS
+    cluster_method = 'optics'
+
   except:
     print(timestamp(), 'HDBSCAN not available; using sklearn KMeans')
     from sklearn.cluster import KMeans
     cluster_method = 'kmeans'
 
+  print(cluster_method)
   try:
     from cuml.manifold.umap import UMAP
     print(timestamp(), 'Using cuml UMAP')
@@ -121,13 +126,13 @@ config = {
   'max_images': None,
   'use_cache': True,
   'encoding': 'utf8',
-  'min_cluster_size': 20,
-  'max_clusters': 10,
+  'min_cluster_size': 2,
+  'max_clusters': 2000,
   'atlas_size': 2048,
   'cell_size': 32,
   'lod_cell_height': 128,
-  'n_neighbors': [15],
-  'min_dist': [0.01],
+  'n_neighbors': [1],
+  'min_dist': [0.08],
   'n_components': 2,
   'metric': 'correlation',
   'pointgrid_fill': 0.05,
@@ -594,7 +599,7 @@ def get_inception_vectors(**kwargs):
       try:
         vec = iiif2vec[filename]
       except:
-        print('predicting cause couldnt file in mapping')
+        print('predicting cause couldnt find file in mapping')
         im = preprocess_input( img_to_array( i.original.resize((299,299)) ) )
         vec = model.predict(np.expand_dims(im, 0)).squeeze()
       np.save(vector_path, vec)
@@ -628,7 +633,7 @@ def get_inception_vectors(**kwargs):
 def get_umap_layout(**kwargs):
   '''Get the x,y positions of images passed through a umap projection'''
   vecs = kwargs['vecs']
-  w = PCA(n_components=min(100, len(vecs))).fit_transform(vecs)
+  w = vecs #PCA(n_components=min(100, len(vecs))).fit_transform(vecs)
   # single model umap
   if len(kwargs['n_neighbors']) == 1 and len(kwargs['min_dist']) == 1:
     return process_single_layout_umap(w, **kwargs)
@@ -772,6 +777,21 @@ def get_umap_model(**kwargs):
       transform_seed=kwargs['seed'])
 
 
+def get_dbscan_model(**kwargs):
+  if cuml_ready:
+    return DBSCAN(
+      min_samples=kwargs['n_neighbors'][0],
+      eps=kwargs['min_dist'][0],
+      random_state=kwargs['seed'],
+      verbose=5)
+  else:
+    return DBSCAN(
+      min_samples=kwargs['n_neighbors'][0],
+      eps=kwargs['min_dist'][0],
+      metric=kwargs['metric'],
+      random_state=kwargs['seed'],
+      )
+  
 def get_tsne_layout(**kwargs):
   '''Get the x,y positions of images passed through a TSNE projection'''
   print(timestamp(), 'Creating TSNE layout with ' + str(multiprocessing.cpu_count()) + ' cores...')
@@ -1261,6 +1281,20 @@ def get_hotspots(layouts={}, use_high_dimensional_vectors=True, **kwargs):
   return write_json(get_path('hotspots', 'hotspot', **kwargs), clusters, **kwargs)
 
 
+# def get_cluster_model(**kwargs):
+#   '''Return a model with .fit() method that can be used to cluster input vectors'''
+#   if cluster_method == 'hdbscan':
+#     config = {
+#       'core_dist_n_jobs': multiprocessing.cpu_count(),
+#       'min_cluster_size': kwargs['min_cluster_size'],
+#       'cluster_selection_epsilon': 0.01,
+#       'min_samples': 1,
+#       'approx_min_span_tree': False,
+#     }
+#     return HDBSCAN(**config)
+#   else:
+#     return KMeans(n_clusters=kwargs['n_clusters'], random_state=kwargs['seed'])
+
 def get_cluster_model(**kwargs):
   '''Return a model with .fit() method that can be used to cluster input vectors'''
   if cluster_method == 'hdbscan':
@@ -1272,6 +1306,17 @@ def get_cluster_model(**kwargs):
       'approx_min_span_tree': False,
     }
     return HDBSCAN(**config)
+  elif cluster_method == 'optics':
+    print('clustering with optics')
+    config = {
+      'core_dist_n_jobs': multiprocessing.cpu_count(),
+      'min_samples': 2, #kwargs['min_cluster_size'],
+      'max_eps': 0.13,
+       #'min_cluster_size': 2,
+      #'approx_min_span_tree': False,
+      'metric':'cosine',
+    }
+    return OPTICS(**config)
   else:
     return KMeans(n_clusters=kwargs['n_clusters'], random_state=kwargs['seed'])
 
