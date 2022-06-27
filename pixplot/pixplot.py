@@ -1309,7 +1309,6 @@ def get_cluster_model(**kwargs):
   elif cluster_method == 'optics':
     print('clustering with optics')
     config = {
-      'core_dist_n_jobs': multiprocessing.cpu_count(),
       'min_samples': 2, #kwargs['min_cluster_size'],
       'max_eps': 0.13,
        #'min_cluster_size': 2,
