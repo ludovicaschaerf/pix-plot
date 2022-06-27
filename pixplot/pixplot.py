@@ -131,7 +131,7 @@ config = {
   'atlas_size': 2048,
   'cell_size': 32,
   'lod_cell_height': 128,
-  'n_neighbors': [1],
+  'n_neighbors': [2],
   'min_dist': [0.08],
   'n_components': 2,
   'metric': 'correlation',
